@@ -19,7 +19,7 @@ The database represents a property management platform with the following entiti
 | **owner** | An owner can own multiple properties (via `property_owner`) |
 | **lease** | A unit can only have **one Active lease** at a time; past leases are retained with status `Expired` or `Terminated` |
 | **tenant** | A tenant can only be on **one Active lease** at a time but may have past leases |
-| **address** | A single `address` table is shared across properties, units, owners, and tenants |
+| **address** | A single `address` table is shared across all entities. The FK to the owning entity lives **on the address row** (one of `property_id`, `unit_id`, `owner_id`, or `tenant_id`), allowing each entity to have multiple addresses. Each address has an `address_type` (`Physical`, `Mailing`, `Billing`) and an `is_primary` flag. |
 
 **Lease Statuses:** `Active`, `Expired`, `Terminated`  
 **A unit is considered *occupied* when it has a lease with status = `Active`.**
