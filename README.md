@@ -120,3 +120,61 @@ The returned JSON should be an array of objects. Each object must include:
 
 ### Dependencies
 - `pandas`, `psycopg2-binary`
+
+---
+
+## Optional Extensions (Depth Differentiators)
+
+You are not expected to complete every optional extension. We are more interested in depth and clarity than breadth. Focus on demonstrating how you think about data systems.
+
+---
+
+### Extension A: Data Quality & Validation
+
+Working with the property management schema provided:
+
+- Identify at least three data quality risks in the schema (e.g. orphaned records, missing constraints, duplicate risk)
+- Write example validation queries that would surface those issues
+- Suggest any additional constraints, indexes, or integrity enforcement strategies you would add and explain why
+
+---
+
+### Extension B: Performance & PostgreSQL 14 Optimization
+
+The `charge` and `receipt` tables are expected to grow significantly as properties and leases accumulate over time. Assume `receipt` may reach 200M+ rows:
+
+- Propose indexing strategies for the most common query patterns (e.g. balance lookups per lease, payment history per tenant)
+- Discuss whether and how you would partition `charge` or `receipt` in PostgreSQL 14
+- Address the OLTP vs OLAP tradeoff — at what point would you move balance reporting off the transactional database?
+- Describe any query plan implications a reviewer should be aware of in the lease balance query from Part 3
+
+---
+
+### Extension C: GCP Production Architecture
+
+Describe how you would productionize this data model and the lease balance report in Google Cloud:
+
+- Would you replicate the PostgreSQL data to BigQuery? If so, what approach would you use (CDC, ELT, scheduled export)?
+- ELT vs ETL — what is your preference for this use case and why?
+- What orchestration tooling would you use and how would you structure the DAGs or pipelines?
+- How would you handle backfills and reprocessing if a charge or receipt was retroactively corrected?
+- What CI/CD strategy would you apply to schema migrations and pipeline changes?
+- What cost considerations would influence your architecture decisions?
+
+Focus on pragmatic, cloud-native thinking rather than buzzwords.
+
+---
+
+### Extension D: Observability & Reliability
+
+- How would you monitor for pipeline or ingestion failures involving the `charge` and `receipt` tables?
+- How would you detect silent data corruption — for example, a receipt where the total amount applied to charges exceeds the receipt's `total_amount`?
+- How would you track and alert on data freshness SLAs — for example, ensuring the lease balance report reflects charges posted within the last 24 hours?
+
+---
+
+### Extension E: AI / ML Enablement (Bonus)
+
+- How would you structure the property management data to support ML feature generation (e.g. predicting late payments or lease renewal likelihood)?
+- Several entities in this schema — such as `property_subtype`, lease terms, and rent amounts — may change over time. How would you handle slowly changing dimensions?
+- Would you implement snapshotting for lease or balance state? Why or why not, and at what granularity?
