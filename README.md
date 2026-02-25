@@ -49,4 +49,38 @@ Write a single SQL query that produces a **property directory report**. The repo
 
 ---
 
-*Additional parts to follow.*
+---
+
+## Part 2 — Data Model Expansion
+
+Extend the existing schema to support two new requirements. Write all changes as valid SQL (`CREATE TABLE`, `ALTER TABLE`, `CREATE TYPE`, etc.). Do **not** insert seed data — DDL only.
+
+### 2a. Property Subtype
+
+The `property` table currently has a `property_type` column that stores a broad class (e.g. `Residential`, `Commercial`). We now need to also track a more specific **subtype** for residential properties. Valid values are:
+
+- `Single Family`
+- `Condo`
+- `Duplex`
+- `Apartment`
+
+Add this to the data model in whatever way you think is most appropriate. Be prepared to explain your approach and its tradeoffs.
+
+> **Note:** Not every property will have a subtype (e.g. commercial properties), so the field must be nullable.
+
+---
+
+### 2b. Charges & Receipts
+
+We need to track the financial activity on each lease. Add tables to support the following:
+
+**Charges** — amounts billed to a lease (e.g. monthly rent, pet fee, late fee, security deposit).
+
+**Receipts** — payments submitted by a tenant against a lease.
+
+**Important relationship rule:** A charge can be partially or fully paid by one or more receipts, and a single receipt can be applied toward one or more charges. Your model must support this.
+
+Things to consider and be prepared to discuss:
+- How do you determine the outstanding balance on a charge?
+- How do you handle a receipt that only partially covers a charge?
+- How would you validate that the amounts applied across all charges for a receipt don't exceed the receipt's total?
