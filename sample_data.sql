@@ -8,7 +8,16 @@ CREATE TABLE address (
     street_line_2   VARCHAR(50),
     city            VARCHAR(50)  NOT NULL,
     state           CHAR(2)      NOT NULL,
-    zip_code        VARCHAR(10)  NOT NULL
+    zip_code        VARCHAR(10)  NOT NULL,
+
+    -- Polymorphic FK: exactly one of these should be non-null
+    property_id     INT REFERENCES property(property_id),
+    unit_id         INT REFERENCES unit(unit_id),
+    owner_id        INT REFERENCES owner(owner_id),
+    tenant_id       INT REFERENCES tenant(tenant_id),
+
+    address_type    VARCHAR(30) NOT NULL,  -- e.g. 'Physical', 'Mailing', 'Billing'
+    is_primary      BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE owner (
@@ -16,15 +25,13 @@ CREATE TABLE owner (
     first_name  VARCHAR(50) NOT NULL,
     last_name   VARCHAR(50) NOT NULL,
     email       VARCHAR(100),
-    phone       VARCHAR(20),
-    address_id  INT REFERENCES address(address_id)   -- owner's mailing address
+    phone       VARCHAR(20)
 );
 
 CREATE TABLE property (
     property_id     SERIAL PRIMARY KEY,
     property_name   VARCHAR(100) NOT NULL,
-    property_type   VARCHAR(50),   -- e.g. 'Residential', 'Commercial', 'Mixed-Use'
-    address_id      INT REFERENCES address(address_id)
+    property_type   VARCHAR(50)  -- e.g. 'Residential', 'Commercial', 'Mixed-Use'
 );
 
 -- Many-to-many: an owner can own many properties, a property can have many owners
@@ -41,8 +48,7 @@ CREATE TABLE unit (
     unit_number     VARCHAR(20)  NOT NULL,
     bedrooms        SMALLINT,
     bathrooms       NUMERIC(3,1),
-    sq_ft           INT,
-    address_id      INT REFERENCES address(address_id)  -- unit-level address (e.g. apt #)
+    sq_ft           INT
 );
 
 CREATE TABLE tenant (
@@ -50,8 +56,7 @@ CREATE TABLE tenant (
     first_name  VARCHAR(50) NOT NULL,
     last_name   VARCHAR(50) NOT NULL,
     email       VARCHAR(100),
-    phone       VARCHAR(20),
-    address_id  INT REFERENCES address(address_id)   -- tenant's non-unit mailing address
+    phone       VARCHAR(20)
 );
 
 CREATE TABLE lease (
@@ -76,42 +81,18 @@ CREATE TABLE lease_tenant (
 --  SEED DATA
 -- ============================================================
 
--- Addresses
-INSERT INTO address (address_id, street_line_1, street_line_2, city, state, zip_code) VALUES
--- Property addresses
-(1,  '100 Maple Street',       NULL,       'Austin',       'TX', '78701'),
-(2,  '250 Oak Avenue',         NULL,       'Austin',       'TX', '78702'),
-(3,  '789 Pine Boulevard',     NULL,       'Austin',       'TX', '78703'),
--- Unit-level addresses (same building, different apt numbers)
-(4,  '100 Maple Street',       'Apt 101',  'Austin',       'TX', '78701'),
-(5,  '100 Maple Street',       'Apt 102',  'Austin',       'TX', '78701'),
-(6,  '100 Maple Street',       'Apt 201',  'Austin',       'TX', '78701'),
-(7,  '250 Oak Avenue',         'Unit A',   'Austin',       'TX', '78702'),
-(8,  '250 Oak Avenue',         'Unit B',   'Austin',       'TX', '78702'),
-(9,  '789 Pine Boulevard',     'Suite 1',  'Austin',       'TX', '78703'),
-(10, '789 Pine Boulevard',     'Suite 2',  'Austin',       'TX', '78703'),
-(11, '789 Pine Boulevard',     'Suite 3',  'Austin',       'TX', '78703'),
--- Owner mailing addresses
-(12, '400 Investor Lane',      NULL,       'Dallas',       'TX', '75201'),
-(13, '55 Capital Drive',       NULL,       'Houston',      'TX', '77001'),
-(14, '900 Equity Road',        NULL,       'San Antonio',  'TX', '78201'),
--- Tenant mailing addresses (prior/forwarding)
-(15, '12 Old Apartment Ct',    NULL,       'Austin',       'TX', '78704'),
-(16, '88 College Blvd',        NULL,       'Austin',       'TX', '78705');
+-- Owners (no address_id column anymore)
+INSERT INTO owner (owner_id, first_name, last_name, email, phone) VALUES
+(1, 'Robert',  'Harmon',   'robert.harmon@email.com',  '512-555-0101'),
+(2, 'Sandra',  'Patel',    'sandra.patel@email.com',   '214-555-0202'),
+(3, 'Marcus',  'Liu',      'marcus.liu@email.com',     '210-555-0303');
 
 
--- Owners
-INSERT INTO owner (owner_id, first_name, last_name, email, phone, address_id) VALUES
-(1, 'Robert',  'Harmon',   'robert.harmon@email.com',  '512-555-0101', 12),
-(2, 'Sandra',  'Patel',    'sandra.patel@email.com',   '214-555-0202', 13),
-(3, 'Marcus',  'Liu',      'marcus.liu@email.com',     '210-555-0303', 14);
-
-
--- Properties
-INSERT INTO property (property_id, property_name, property_type, address_id) VALUES
-(1, 'Maple Street Residences',  'Residential',  1),
-(2, 'Oak Avenue Flats',         'Residential',  2),
-(3, 'Pine Business Center',     'Commercial',   3);
+-- Properties (no address_id column anymore)
+INSERT INTO property (property_id, property_name, property_type) VALUES
+(1, 'Maple Street Residences',  'Residential'),
+(2, 'Oak Avenue Flats',         'Residential'),
+(3, 'Pine Business Center',     'Commercial');
 
 
 -- Property <-> Owner relationships
@@ -123,31 +104,78 @@ INSERT INTO property_owner (property_id, owner_id, ownership_pct) VALUES
 (3, 3, 50.00);   -- Marcus owns 50% of Pine
 
 
--- Units
-INSERT INTO unit (unit_id, property_id, unit_number, bedrooms, bathrooms, sq_ft, address_id) VALUES
+-- Units (no address_id column anymore)
+INSERT INTO unit (unit_id, property_id, unit_number, bedrooms, bathrooms, sq_ft) VALUES
 -- Maple Street (3 units)
-(1, 1, '101', 1, 1.0,  650,  4),
-(2, 1, '102', 2, 1.0,  850,  5),
-(3, 1, '201', 3, 2.0, 1100,  6),
+(1, 1, '101', 1, 1.0,  650),
+(2, 1, '102', 2, 1.0,  850),
+(3, 1, '201', 3, 2.0, 1100),
 -- Oak Avenue (2 units)
-(4, 2, 'A',   1, 1.0,  700,  7),
-(5, 2, 'B',   2, 2.0,  950,  8),
+(4, 2, 'A',   1, 1.0,  700),
+(5, 2, 'B',   2, 2.0,  950),
 -- Pine Business Center (3 suites)
-(6, 3, 'Suite 1', NULL, NULL, 1200, 9),
-(7, 3, 'Suite 2', NULL, NULL,  800, 10),
-(8, 3, 'Suite 3', NULL, NULL,  600, 11);
+(6, 3, 'Suite 1', NULL, NULL, 1200),
+(7, 3, 'Suite 2', NULL, NULL,  800),
+(8, 3, 'Suite 3', NULL, NULL,  600);
 
 
--- Tenants
-INSERT INTO tenant (tenant_id, first_name, last_name, email, phone, address_id) VALUES
-(1, 'Alice',   'Monroe',   'alice.monroe@email.com',   '512-555-1001', NULL),
-(2, 'Brian',   'Cho',      'brian.cho@email.com',      '512-555-1002', NULL),
-(3, 'Carmen',  'Reyes',    'carmen.reyes@email.com',   '512-555-1003', 15),  -- has a forwarding address
-(4, 'David',   'Kim',      'david.kim@email.com',      '512-555-1004', NULL),
-(5, 'Elena',   'Vasquez',  'elena.vasquez@email.com',  '512-555-1005', NULL),
-(6, 'Frank',   'Nguyen',   'frank.nguyen@email.com',   '512-555-1006', 16),  -- has a forwarding address
-(7, 'Grace',   'Okafor',   'grace.okafor@email.com',   '512-555-1007', NULL),
-(8, 'Hector',  'Burns',    'hector.burns@email.com',   '512-555-1008', NULL);
+-- Tenants (no address_id column anymore)
+INSERT INTO tenant (tenant_id, first_name, last_name, email, phone) VALUES
+(1, 'Alice',   'Monroe',   'alice.monroe@email.com',   '512-555-1001'),
+(2, 'Brian',   'Cho',      'brian.cho@email.com',      '512-555-1002'),
+(3, 'Carmen',  'Reyes',    'carmen.reyes@email.com',   '512-555-1003'),
+(4, 'David',   'Kim',      'david.kim@email.com',      '512-555-1004'),
+(5, 'Elena',   'Vasquez',  'elena.vasquez@email.com',  '512-555-1005'),
+(6, 'Frank',   'Nguyen',   'frank.nguyen@email.com',   '512-555-1006'),
+(7, 'Grace',   'Okafor',   'grace.okafor@email.com',   '512-555-1007'),
+(8, 'Hector',  'Burns',    'hector.burns@email.com',   '512-555-1008');
+
+
+-- ============================================================
+--  ADDRESSES  (FK lives here; one row per address per entity)
+-- ============================================================
+--  address_type values used:
+--    'Physical'  – where the property/unit actually is
+--    'Mailing'   – owner/tenant preferred mailing address
+--    'Billing'   – alternate billing address
+-- ============================================================
+
+INSERT INTO address (address_id, street_line_1, street_line_2, city, state, zip_code,
+                     property_id, unit_id, owner_id, tenant_id, address_type, is_primary)
+VALUES
+-- ── Property physical addresses ──────────────────────────────
+(1,  '100 Maple Street',    NULL,        'Austin',      'TX', '78701',  1, NULL, NULL, NULL, 'Physical', TRUE),
+(2,  '250 Oak Avenue',      NULL,        'Austin',      'TX', '78702',  2, NULL, NULL, NULL, 'Physical', TRUE),
+(3,  '789 Pine Boulevard',  NULL,        'Austin',      'TX', '78703',  3, NULL, NULL, NULL, 'Physical', TRUE),
+
+-- ── Unit physical addresses ───────────────────────────────────
+(4,  '100 Maple Street',    'Apt 101',   'Austin',      'TX', '78701',  NULL, 1, NULL, NULL, 'Physical', TRUE),
+(5,  '100 Maple Street',    'Apt 102',   'Austin',      'TX', '78701',  NULL, 2, NULL, NULL, 'Physical', TRUE),
+(6,  '100 Maple Street',    'Apt 201',   'Austin',      'TX', '78701',  NULL, 3, NULL, NULL, 'Physical', TRUE),
+(7,  '250 Oak Avenue',      'Unit A',    'Austin',      'TX', '78702',  NULL, 4, NULL, NULL, 'Physical', TRUE),
+(8,  '250 Oak Avenue',      'Unit B',    'Austin',      'TX', '78702',  NULL, 5, NULL, NULL, 'Physical', TRUE),
+(9,  '789 Pine Boulevard',  'Suite 1',   'Austin',      'TX', '78703',  NULL, 6, NULL, NULL, 'Physical', TRUE),
+(10, '789 Pine Boulevard',  'Suite 2',   'Austin',      'TX', '78703',  NULL, 7, NULL, NULL, 'Physical', TRUE),
+(11, '789 Pine Boulevard',  'Suite 3',   'Austin',      'TX', '78703',  NULL, 8, NULL, NULL, 'Physical', TRUE),
+
+-- ── Owner mailing addresses (primary) ────────────────────────
+(12, '400 Investor Lane',   NULL,        'Dallas',      'TX', '75201',  NULL, NULL, 1, NULL, 'Mailing', TRUE),
+(13, '55 Capital Drive',    NULL,        'Houston',     'TX', '77001',  NULL, NULL, 2, NULL, 'Mailing', TRUE),
+(14, '900 Equity Road',     NULL,        'San Antonio', 'TX', '78201',  NULL, NULL, 3, NULL, 'Mailing', TRUE),
+
+-- ── Owner billing addresses (secondary — demonstrates multi-address) ──
+(15, '1 Finance Plaza',     'Ste 300',   'Dallas',      'TX', '75202',  NULL, NULL, 1, NULL, 'Billing', FALSE),
+(16, '200 Commerce Street', NULL,        'Houston',     'TX', '77002',  NULL, NULL, 2, NULL, 'Billing', FALSE),
+
+-- ── Tenant mailing addresses ──────────────────────────────────
+-- Carmen: primary mailing (forwarding from old place)
+(17, '12 Old Apartment Ct', NULL,        'Austin',      'TX', '78704',  NULL, NULL, NULL, 3, 'Mailing', TRUE),
+-- Frank: primary mailing
+(18, '88 College Blvd',     NULL,        'Austin',      'TX', '78705',  NULL, NULL, NULL, 6, 'Mailing', TRUE),
+-- David: two mailing addresses (moved; kept both) — demonstrates multi-address for tenants
+(19, '300 First Street',    'Apt 4B',    'Austin',      'TX', '78701',  NULL, NULL, NULL, 4, 'Mailing', FALSE),
+(20, '77 New Start Ave',    NULL,        'Austin',      'TX', '78703',  NULL, NULL, NULL, 4, 'Mailing', TRUE);
+
 
 
 -- Leases
