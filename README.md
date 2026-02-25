@@ -178,3 +178,17 @@ Focus on pragmatic, cloud-native thinking rather than buzzwords.
 - How would you structure the property management data to support ML feature generation (e.g. predicting late payments or lease renewal likelihood)?
 - Several entities in this schema — such as `property_subtype`, lease terms, and rent amounts — may change over time. How would you handle slowly changing dimensions?
 - Would you implement snapshotting for lease or balance state? Why or why not, and at what granularity?
+
+___
+
+## Submission
+
+Please submit your solution as a GitHub repository or a zipped folder containing:
+
+- SQL files
+- Python files
+- Documentation (README required)
+- Any diagrams
+- Optional extension writeups
+
+We are excited to see how you think about data systems and look forward to discussing your approach.
